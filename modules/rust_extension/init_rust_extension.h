@@ -7,6 +7,7 @@ public:
 	InitRustExtension();
 
 	static String get_extension_file(const String& project_name);
+	static String get_enter_file();
 
 	enum ExtensionTypes {
 		NONE,

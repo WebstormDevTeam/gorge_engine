@@ -587,6 +587,15 @@ void ProjectDialog::ok_pressed() {
 			//设置目标为cdylib
 			String cargo_toml = fa_cargo->get_as_text();
 			fa_cargo->store_string(cargo_toml+"\n[lib]\ncrate-type = [\"cdylib\"]\n");
+			fa_cargo->close();
+
+			Ref<FileAccess> fa_lib_rs = FileAccess::open(path.path_join("src/lib.rs"), FileAccess::WRITE, &err);
+			if (err != OK) {
+				_set_message(TTR("Couldn't create lib.rs in project path."), MESSAGE_ERROR);
+				return;
+			}
+			fa_lib_rs->store_string(InitRustExtension::get_enter_file());
+			fa_lib_rs->close();
 
 			//编译Cargo
 			Error compile_err = CargoTool::Cargo()->set_work_dir(path)->build()->done();

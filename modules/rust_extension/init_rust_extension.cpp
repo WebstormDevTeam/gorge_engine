@@ -25,3 +25,16 @@ String InitRustExtension::get_extension_file(const String& project_name) {
 	//替换所有的{YourCrate}为项目名
 	return profile.replace("{YourCrate}", project_name);
 }
+
+String InitRustExtension::get_enter_file() {
+	const String rs = R"(
+	use godot::prelude::*;
+
+	struct RustGDExtension;
+
+	#[gdextension]
+	unsafe impl ExtensionLibrary for RustGDExtension {}
+
+	)";
+	return rs;
+}
