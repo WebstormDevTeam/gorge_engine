@@ -90,6 +90,7 @@ private:
 	TextureRect *install_status_rect = nullptr;
 
 	OptionButton *vcs_metadata_selection = nullptr;
+	OptionButton *extension_language_selection = nullptr;
 
 	CheckBox *edit_check_box = nullptr;
 

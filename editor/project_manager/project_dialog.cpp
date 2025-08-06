@@ -40,6 +40,9 @@
 #include "editor/gui/editor_file_dialog.h"
 #include "editor/themes/editor_icons.h"
 #include "editor/themes/editor_scale.h"
+#include "modules/navigation/nav_utils.h"
+#include "modules/rust_extension/cargo_tool.h"
+#include "modules/rust_extension/init_rust_extension.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/check_button.h"
 #include "scene/gui/line_edit.h"
@@ -552,7 +555,45 @@ void ProjectDialog::ok_pressed() {
 			return;
 		}
 
-		//TODO:添加自动创建gdextension的代码
+		if (extension_language_selection->get_selected() == InitRustExtension::ExtensionTypes::RUST) {
+			//创建cargo项目
+			Error init_err = CargoTool::Cargo()->set_work_dir(path)->init()->done();
+			if (init_err != OK) {
+				_set_message(TTR("Couldn't initialize cargo project."), MESSAGE_ERROR);
+				return;
+			}
+			//添加godot依赖
+			Error add_godot_err = CargoTool::Cargo()->set_work_dir(path)->add("godot")->done();
+			if (add_godot_err != OK) {
+				_set_message(TTR("Couldn't add godot dependency to cargo project."), MESSAGE_ERROR);
+				return;
+			}
+
+			//读取cargo.toml
+			Ref<FileAccess> fa_cargo = FileAccess::open(path.path_join("Cargo.toml"), FileAccess::READ_WRITE, &err);
+			if (err != OK) {
+				_set_message(TTR("Couldn't open Cargo.toml in project path."), MESSAGE_ERROR);
+				return;
+			}
+			//设置目标为cdylib
+			String cargo_toml = fa_cargo->get_as_text();
+			fa_cargo->store_string(cargo_toml+"\n[lib]\ncrate-type = [\"cdylib\"]\n");
+			//编译Cargo
+			Error compile_err = CargoTool::Cargo()->set_work_dir(path)->build()->done();
+			if (compile_err != OK) {
+				_set_message(TTR("Couldn't compile rust extension."), MESSAGE_ERROR);
+				return;
+			}
+			Error* extension_create_err = memnew(Error);
+			Ref<FileAccess> fa_gdextension = FileAccess::open(path.path_join("rust_extension.gdextension"), FileAccess::WRITE, extension_create_err);
+			if (err != OK) {
+				_set_message(TTR("Couldn't create gdextension.gdextension in project path."), MESSAGE_ERROR);
+				return;
+			}
+			fa_gdextension->store_string(InitRustExtension::get_extension_file(project_name->get_text()));
+		}
+
+
 
 		// Store default project icon in SVG format.
 		Ref<FileAccess> fa_icon = FileAccess::open(path.path_join("icon.svg"), FileAccess::WRITE, &err);
@@ -1056,8 +1097,8 @@ ProjectDialog::ProjectDialog() {
 	default_files_container->add_child(vcs_label);
 	vcs_metadata_selection = memnew(OptionButton);
 	vcs_metadata_selection->set_custom_minimum_size(Size2(100, 20));
-	vcs_metadata_selection->add_item(TTR("None"), (int)EditorVCSInterface::VCSMetadata::NONE);
-	vcs_metadata_selection->add_item(TTR("Git"), (int)EditorVCSInterface::VCSMetadata::GIT);
+	vcs_metadata_selection->add_item(TTR("None"), static_cast<int>(EditorVCSInterface::VCSMetadata::NONE));
+	vcs_metadata_selection->add_item(TTR("Git"), static_cast<int>(EditorVCSInterface::VCSMetadata::GIT));
 	vcs_metadata_selection->select((int)EditorVCSInterface::VCSMetadata::GIT);
 	default_files_container->add_child(vcs_metadata_selection);
 
@@ -1065,12 +1106,12 @@ ProjectDialog::ProjectDialog() {
 	extension_language_label->set_text(TTR("Extension Language:"));
 	default_files_container->add_child(extension_language_label);
 
-	OptionButton* extension_language_selection = memnew(OptionButton);
+	extension_language_selection = memnew(OptionButton);
 	extension_language_selection->set_custom_minimum_size(Size2(100, 20));
-	extension_language_selection->add_item(TTR("None"), 0);
-	extension_language_selection->add_item(TTR("Rust"), 1);
-	extension_language_selection->add_item(TTR("C#"), 2);
-	extension_language_selection->select(1);
+	extension_language_selection->add_item(TTR("None"), InitRustExtension::ExtensionTypes::NONE);
+	extension_language_selection->add_item(TTR("Rust"), InitRustExtension::ExtensionTypes::RUST);
+	extension_language_selection->add_item(TTR("C#"), InitRustExtension::ExtensionTypes::CSHARP);
+	extension_language_selection->select(InitRustExtension::ExtensionTypes::NONE);
 	default_files_container->add_child(extension_language_selection);
 
 	Control *spacer = memnew(Control);
