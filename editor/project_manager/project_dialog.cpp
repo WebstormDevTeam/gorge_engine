@@ -37,6 +37,7 @@
 #include "editor/editor_settings.h"
 #include "editor/editor_string_names.h"
 #include "editor/editor_vcs_interface.h"
+#include "editor/progress_dialog.h"
 #include "editor/gui/editor_file_dialog.h"
 #include "editor/themes/editor_icons.h"
 #include "editor/themes/editor_scale.h"
@@ -556,12 +557,20 @@ void ProjectDialog::ok_pressed() {
 		}
 
 		if (extension_language_selection->get_selected() == InitRustExtension::ExtensionTypes::RUST) {
+			// 在需要提示的地方
+			AcceptDialog* compile_dialog = memnew(AcceptDialog);
+			compile_dialog->set_text(TTR("Please wait while the Rust extension is being compiled. This may take a few minutes..."));
+			compile_dialog->set_title(TTR("Compiling Rust Extension"));
+			compile_dialog->set_exclusive(true); // 阻止用户交互直到编译完成
+			add_child(compile_dialog);
+			compile_dialog->popup_centered();
 			//创建cargo项目
 			Error init_err = CargoTool::Cargo()->set_work_dir(path)->init()->done();
 			if (init_err != OK) {
 				_set_message(TTR("Couldn't initialize cargo project."), MESSAGE_ERROR);
 				return;
 			}
+
 			//添加godot依赖
 			Error add_godot_err = CargoTool::Cargo()->set_work_dir(path)->add("godot")->done();
 			if (add_godot_err != OK) {
@@ -578,6 +587,7 @@ void ProjectDialog::ok_pressed() {
 			//设置目标为cdylib
 			String cargo_toml = fa_cargo->get_as_text();
 			fa_cargo->store_string(cargo_toml+"\n[lib]\ncrate-type = [\"cdylib\"]\n");
+
 			//编译Cargo
 			Error compile_err = CargoTool::Cargo()->set_work_dir(path)->build()->done();
 			if (compile_err != OK) {
@@ -591,6 +601,8 @@ void ProjectDialog::ok_pressed() {
 				return;
 			}
 			fa_gdextension->store_string(InitRustExtension::get_extension_file(project_name->get_text()));
+			// 关闭提示弹窗
+			compile_dialog->queue_free();
 		}
 
 
