@@ -1,4 +1,4 @@
-# Godot Engine
+# Godot Engine for Rust
 
 <p align="center">
   <a href="https://godotengine.org">
@@ -34,6 +34,17 @@ titles.
 ![Screenshot of a 3D scene in the Godot Engine editor](https://raw.githubusercontent.com/godotengine/godot-design/master/screenshots/editor_tps_demo_1920x1080.jpg)
 
 ## Getting the engine
+
+### Install Rust and Cargo
+
+[Install Rust](https://www.rust-lang.org/tools/install) and [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+
+### Test your environment
+
+```sh
+cargo --version
+rustc --version
+```
 
 ### Binary downloads
 
