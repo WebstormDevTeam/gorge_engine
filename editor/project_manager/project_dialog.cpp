@@ -111,7 +111,7 @@ void ProjectDialog::_validate_path() {
 			target_path = install_path->get_text().simplify_path();
 			target_path_input_type = INSTALL_PATH;
 
-			create_dir->show();
+			create_dir_button->show();
 			install_path_container->show();
 
 			Ref<FileAccess> io_fa;
@@ -156,12 +156,12 @@ void ProjectDialog::_validate_path() {
 		} else if (d->dir_exists(path) && d->file_exists(path.path_join("project.godot"))) {
 			zip_path = "";
 
-			create_dir->hide();
+			create_dir_button->hide();
 			install_path_container->hide();
 
 			_set_message(TTR("Valid project found at path."), MESSAGE_SUCCESS);
 		} else {
-			create_dir->hide();
+			create_dir_button->hide();
 			install_path_container->hide();
 
 			_set_message(TTR("Please choose a \"project.godot\", a directory with one, or a \".zip\" file."), MESSAGE_ERROR);
@@ -200,7 +200,7 @@ void ProjectDialog::_validate_path() {
 
 	is_folder_empty = true;
 	if (mode == MODE_NEW || mode == MODE_INSTALL || (mode == MODE_IMPORT && target_path_input_type == InputType::INSTALL_PATH)) {
-		if (create_dir->is_pressed()) {
+		if (create_dir_button->is_pressed()) {
 			if (!d->dir_exists(target_path.get_base_dir())) {
 				_set_message(TTR("The parent directory of the path specified doesn't exist."), MESSAGE_ERROR, target_path_input_type);
 				return;
@@ -297,7 +297,7 @@ void ProjectDialog::_update_target_auto_dir() {
 	}
 	new_auto_dir = OS::get_singleton()->get_safe_dir_name(new_auto_dir);
 
-	if (create_dir->is_pressed()) {
+	if (create_dir_button->is_pressed()) {
 		String target_path = _get_target_path();
 
 		if (target_path.get_file() == auto_dir) {
@@ -314,7 +314,7 @@ void ProjectDialog::_update_target_auto_dir() {
 void ProjectDialog::_create_dir_toggled(bool p_pressed) {
 	String target_path = _get_target_path();
 
-	if (create_dir->is_pressed()) {
+	if (create_dir_button->is_pressed()) {
 		// (Re-)append target dir name.
 		if (last_custom_target_dir.is_empty()) {
 			target_path = target_path.path_join(auto_dir);
@@ -365,7 +365,7 @@ void ProjectDialog::_browse_project_path() {
 	if (mode == MODE_IMPORT && install_path->is_visible_in_tree()) {
 		// Select last ZIP file.
 		fdialog_project->set_current_path(path);
-	} else if ((mode == MODE_NEW || mode == MODE_INSTALL) && create_dir->is_pressed()) {
+	} else if ((mode == MODE_NEW || mode == MODE_INSTALL) && create_dir_button->is_pressed()) {
 		// Select parent directory of project path.
 		fdialog_project->set_current_dir(path.get_base_dir());
 	} else {
@@ -393,7 +393,7 @@ void ProjectDialog::_browse_install_path() {
 	if (path.is_relative_path() || !DirAccess::dir_exists_absolute(path)) {
 		path = EDITOR_GET("filesystem/directories/default_project_path");
 	}
-	if (create_dir->is_pressed()) {
+	if (create_dir_button->is_pressed()) {
 		// Select parent directory of install path.
 		fdialog_install->set_current_dir(path.get_base_dir());
 	} else {
@@ -408,7 +408,7 @@ void ProjectDialog::_browse_install_path() {
 void ProjectDialog::_project_path_selected(const String &p_path) {
 	show_dialog(false);
 
-	if (create_dir->is_pressed() && (mode == MODE_NEW || mode == MODE_INSTALL)) {
+	if (create_dir_button->is_pressed() && (mode == MODE_NEW || mode == MODE_INSTALL)) {
 		// Replace parent directory, but keep target dir name.
 		project_path->set_text(p_path.path_join(project_path->get_text().get_file()));
 	} else {
@@ -428,7 +428,7 @@ void ProjectDialog::_project_path_selected(const String &p_path) {
 void ProjectDialog::_install_path_selected(const String &p_path) {
 	ERR_FAIL_COND_MSG(mode != MODE_IMPORT, "Install path is only used for MODE_IMPORT.");
 
-	if (create_dir->is_pressed()) {
+	if (create_dir_button->is_pressed()) {
 		// Replace parent directory, but keep target dir name.
 		install_path->set_text(p_path.path_join(install_path->get_text().get_file()));
 	} else {
@@ -478,11 +478,11 @@ void ProjectDialog::_renderer_selected() {
 		WARN_PRINT("Unknown renderer type. Please report this as a bug on GitHub.");
 	}
 
-	rd_not_supported->set_visible(rd_error);
+	render_device_not_supported_label->set_visible(rd_error);
 	get_ok_button()->set_disabled(rd_error);
 	if (rd_error) {
 		// Needs to be set here since theme colors aren't available at startup.
-		rd_not_supported->add_theme_color_override(SceneStringName(font_color), get_theme_color(SNAME("error_color"), EditorStringName(Editor)));
+		render_device_not_supported_label->add_theme_color_override(SceneStringName(font_color), get_theme_color(SNAME("error_color"), EditorStringName(Editor)));
 	}
 }
 
@@ -509,7 +509,7 @@ void ProjectDialog::ok_pressed() {
 	String path = project_path->get_text();
 
 	if (mode == MODE_NEW) {
-		if (create_dir->is_pressed()) {
+		if (create_dir_button->is_pressed()) {
 			Ref<DirAccess> d = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 			if (!d->dir_exists(path) && d->make_dir(path) != OK) {
 				_set_message(TTR("Couldn't create project directory, check permissions."), MESSAGE_ERROR);
@@ -551,6 +551,8 @@ void ProjectDialog::ok_pressed() {
 			_set_message(TTR("Couldn't create project.godot in project path."), MESSAGE_ERROR);
 			return;
 		}
+
+		//TODO:添加自动创建gdextension的代码
 
 		// Store default project icon in SVG format.
 		Ref<FileAccess> fa_icon = FileAccess::open(path.path_join("icon.svg"), FileAccess::WRITE, &err);
@@ -632,7 +634,7 @@ void ProjectDialog::ok_pressed() {
 				return;
 			}
 
-			if (create_dir->is_pressed()) {
+			if (create_dir_button->is_pressed()) {
 				Ref<DirAccess> d = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 				if (!d->dir_exists(path) && d->make_dir(path) != OK) {
 					_set_message(TTR("Couldn't create project directory, check permissions."), MESSAGE_ERROR);
@@ -764,7 +766,7 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 		set_title(TTR("Rename Project"));
 		set_ok_button_text(TTR("Rename"));
 
-		create_dir->hide();
+		create_dir_button->hide();
 		project_status_rect->hide();
 		project_browse->hide();
 		edit_check_box->hide();
@@ -795,7 +797,7 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 			fdialog_project->set_current_dir(d->get_current_dir());
 		}
 
-		create_dir->show();
+		create_dir_button->show();
 		project_status_rect->show();
 		project_browse->show();
 		edit_check_box->show();
@@ -838,7 +840,7 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 		auto_dir = "";
 		last_custom_target_dir = "";
 		_update_target_auto_dir();
-		if (create_dir->is_pressed()) {
+		if (create_dir_button->is_pressed()) {
 			// Append `auto_dir` to target path.
 			_create_dir_toggled(true);
 		}
@@ -852,7 +854,7 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 void ProjectDialog::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_THEME_CHANGED: {
-			create_dir->set_button_icon(get_editor_theme_icon(SNAME("FolderCreate")));
+			create_dir_button->set_button_icon(get_editor_theme_icon(SNAME("FolderCreate")));
 			project_browse->set_button_icon(get_editor_theme_icon(SNAME("FolderBrowse")));
 			install_browse->set_button_icon(get_editor_theme_icon(SNAME("FolderBrowse")));
 		} break;
@@ -874,99 +876,100 @@ void ProjectDialog::_bind_methods() {
 }
 
 ProjectDialog::ProjectDialog() {
-	VBoxContainer *vb = memnew(VBoxContainer);
-	add_child(vb);
+	VBoxContainer *box_container = memnew(VBoxContainer);
+	add_child(box_container);
 
 	name_container = memnew(VBoxContainer);
-	vb->add_child(name_container);
+	box_container->add_child(name_container);
 
-	Label *l = memnew(Label);
-	l->set_text(TTR("Project Name:"));
-	name_container->add_child(l);
+	Label *label = memnew(Label);
+	label->set_text(TTR("Project Name:"));
+	name_container->add_child(label);
 
 	project_name = memnew(LineEdit);
 	project_name->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	name_container->add_child(project_name);
 
 	project_path_container = memnew(VBoxContainer);
-	vb->add_child(project_path_container);
+	box_container->add_child(project_path_container);
 
-	HBoxContainer *pphb_label = memnew(HBoxContainer);
-	project_path_container->add_child(pphb_label);
+	HBoxContainer *project_path_h_box_label = memnew(HBoxContainer);
+	project_path_container->add_child(project_path_h_box_label);
 
-	l = memnew(Label);
-	l->set_text(TTR("Project Path:"));
-	l->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	pphb_label->add_child(l);
+	label = memnew(Label);
+	label->set_text(TTR("Project Path:"));
+	label->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	project_path_h_box_label->add_child(label);
 
-	create_dir = memnew(CheckButton);
-	create_dir->set_text(TTR("Create Folder"));
-	create_dir->set_pressed(true);
-	pphb_label->add_child(create_dir);
-	create_dir->connect(SceneStringName(toggled), callable_mp(this, &ProjectDialog::_create_dir_toggled));
+	create_dir_button = memnew(CheckButton);
+	create_dir_button->set_text(TTR("Create Folder"));
+	create_dir_button->set_pressed(true);
+	project_path_h_box_label->add_child(create_dir_button);
+	create_dir_button->connect(SceneStringName(toggled), callable_mp(this, &ProjectDialog::_create_dir_toggled));
 
-	HBoxContainer *pphb = memnew(HBoxContainer);
-	project_path_container->add_child(pphb);
+	HBoxContainer *project_path_h_box_container = memnew(HBoxContainer);
 
 	project_path = memnew(LineEdit);
 	project_path->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	project_path->set_structured_text_bidi_override(TextServer::STRUCTURED_TEXT_FILE);
-	pphb->add_child(project_path);
+
+	project_path_h_box_container->add_child(project_path);
+	project_path_container->add_child(project_path_h_box_container);
 
 	install_path_container = memnew(VBoxContainer);
-	vb->add_child(install_path_container);
+	box_container->add_child(install_path_container);
 
-	l = memnew(Label);
-	l->set_text(TTR("Project Installation Path:"));
-	install_path_container->add_child(l);
+	label = memnew(Label);
+	label->set_text(TTR("Project Installation Path:"));
+	install_path_container->add_child(label);
 
-	HBoxContainer *iphb = memnew(HBoxContainer);
-	install_path_container->add_child(iphb);
+	HBoxContainer *install_path_h_box = memnew(HBoxContainer);
+	install_path_container->add_child(install_path_h_box);
 
 	install_path = memnew(LineEdit);
 	install_path->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	install_path->set_structured_text_bidi_override(TextServer::STRUCTURED_TEXT_FILE);
-	iphb->add_child(install_path);
+	install_path_h_box->add_child(install_path);
 
 	// status icon
 	project_status_rect = memnew(TextureRect);
 	project_status_rect->set_stretch_mode(TextureRect::STRETCH_KEEP_CENTERED);
-	pphb->add_child(project_status_rect);
+	project_path_h_box_container->add_child(project_status_rect);
 
 	project_browse = memnew(Button);
 	project_browse->set_text(TTR("Browse"));
 	project_browse->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_browse_project_path));
-	pphb->add_child(project_browse);
+	project_path_h_box_container->add_child(project_browse);
 
 	// install status icon
 	install_status_rect = memnew(TextureRect);
 	install_status_rect->set_stretch_mode(TextureRect::STRETCH_KEEP_CENTERED);
-	iphb->add_child(install_status_rect);
+	install_path_h_box->add_child(install_status_rect);
 
 	install_browse = memnew(Button);
 	install_browse->set_text(TTR("Browse"));
 	install_browse->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_browse_install_path));
-	iphb->add_child(install_browse);
+	install_path_h_box->add_child(install_browse);
 
 	msg = memnew(Label);
 	msg->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
 	msg->set_custom_minimum_size(Size2(200, 0) * EDSCALE);
 	msg->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-	vb->add_child(msg);
+	box_container->add_child(msg);
 
 	// Renderer selection.
 	renderer_container = memnew(VBoxContainer);
-	vb->add_child(renderer_container);
-	l = memnew(Label);
-	l->set_text(TTR("Renderer:"));
-	renderer_container->add_child(l);
-	HBoxContainer *rshc = memnew(HBoxContainer);
-	renderer_container->add_child(rshc);
+	box_container->add_child(renderer_container);
+	label = memnew(Label);
+	label->set_text(TTR("Renderer:"));
+	renderer_container->add_child(label);
+	HBoxContainer *renderer_h_box = memnew(HBoxContainer);
+	renderer_container->add_child(renderer_h_box);
 	renderer_button_group.instantiate();
 
 	// Left hand side, used for checkboxes to select renderer.
-	Container *rvb = memnew(VBoxContainer);
-	rshc->add_child(rvb);
+	Container *render_v_box = memnew(VBoxContainer);
+	renderer_h_box->add_child(render_v_box);
 
 	String default_renderer_type = "forward_plus";
 	if (EditorSettings::get_singleton()->has_setting("project_manager/default_renderer")) {
@@ -987,7 +990,7 @@ ProjectDialog::ProjectDialog() {
 #endif
 	rs_button->set_meta(SNAME("rendering_method"), "forward_plus");
 	rs_button->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_renderer_selected));
-	rvb->add_child(rs_button);
+	render_v_box->add_child(rs_button);
 	if (default_renderer_type == "forward_plus") {
 		rs_button->set_pressed(true);
 	}
@@ -999,7 +1002,7 @@ ProjectDialog::ProjectDialog() {
 #endif
 	rs_button->set_meta(SNAME("rendering_method"), "mobile");
 	rs_button->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_renderer_selected));
-	rvb->add_child(rs_button);
+	render_v_box->add_child(rs_button);
 	if (default_renderer_type == "mobile") {
 		rs_button->set_pressed(true);
 	}
@@ -1011,52 +1014,65 @@ ProjectDialog::ProjectDialog() {
 #endif
 	rs_button->set_meta(SNAME("rendering_method"), "gl_compatibility");
 	rs_button->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_renderer_selected));
-	rvb->add_child(rs_button);
+	render_v_box->add_child(rs_button);
 #if defined(GLES3_ENABLED)
 	if (default_renderer_type == "gl_compatibility") {
 		rs_button->set_pressed(true);
 	}
 #endif
-	rshc->add_child(memnew(VSeparator));
+	renderer_h_box->add_child(memnew(VSeparator));
 
 	// Right hand side, used for text explaining each choice.
-	rvb = memnew(VBoxContainer);
-	rvb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	rshc->add_child(rvb);
+	render_v_box = memnew(VBoxContainer);
+	render_v_box->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	renderer_h_box->add_child(render_v_box);
 	renderer_info = memnew(Label);
 	renderer_info->set_modulate(Color(1, 1, 1, 0.7));
-	rvb->add_child(renderer_info);
+	render_v_box->add_child(renderer_info);
 
-	rd_not_supported = memnew(Label);
-	rd_not_supported->set_text(vformat(TTR("RenderingDevice-based methods not available on this GPU:\n%s\nPlease use the Compatibility renderer."), RenderingServer::get_singleton()->get_video_adapter_name()));
-	rd_not_supported->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-	rd_not_supported->set_custom_minimum_size(Size2(200, 0) * EDSCALE);
-	rd_not_supported->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
-	rd_not_supported->set_visible(false);
-	renderer_container->add_child(rd_not_supported);
+	render_device_not_supported_label = memnew(Label);
+	render_device_not_supported_label->set_text(vformat(TTR("RenderingDevice-based methods not available on this GPU:\n%s\nPlease use the Compatibility renderer."), RenderingServer::get_singleton()->get_video_adapter_name()));
+	render_device_not_supported_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+	render_device_not_supported_label->set_custom_minimum_size(Size2(200, 0) * EDSCALE);
+	render_device_not_supported_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+	render_device_not_supported_label->set_visible(false);
+	renderer_container->add_child(render_device_not_supported_label);
 
 	_renderer_selected();
 
-	l = memnew(Label);
-	l->set_text(TTR("The renderer can be changed later, but scenes may need to be adjusted."));
+	label = memnew(Label);
+	label->set_text(TTR("The renderer can be changed later, but scenes may need to be adjusted."));
 	// Add some extra spacing to separate it from the list above and the buttons below.
-	l->set_custom_minimum_size(Size2(0, 40) * EDSCALE);
-	l->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-	l->set_vertical_alignment(VERTICAL_ALIGNMENT_CENTER);
-	l->set_modulate(Color(1, 1, 1, 0.7));
-	renderer_container->add_child(l);
+	label->set_custom_minimum_size(Size2(0, 40) * EDSCALE);
+	label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+	label->set_vertical_alignment(VERTICAL_ALIGNMENT_CENTER);
+	label->set_modulate(Color(1, 1, 1, 0.7));
+	renderer_container->add_child(label);
 
 	default_files_container = memnew(HBoxContainer);
-	vb->add_child(default_files_container);
-	l = memnew(Label);
-	l->set_text(TTR("Version Control Metadata:"));
-	default_files_container->add_child(l);
+	box_container->add_child(default_files_container);
+	Label* vcs_label = memnew(Label);
+	vcs_label->set_text(TTR("Version Control Metadata:"));
+	default_files_container->add_child(vcs_label);
 	vcs_metadata_selection = memnew(OptionButton);
 	vcs_metadata_selection->set_custom_minimum_size(Size2(100, 20));
 	vcs_metadata_selection->add_item(TTR("None"), (int)EditorVCSInterface::VCSMetadata::NONE);
 	vcs_metadata_selection->add_item(TTR("Git"), (int)EditorVCSInterface::VCSMetadata::GIT);
 	vcs_metadata_selection->select((int)EditorVCSInterface::VCSMetadata::GIT);
 	default_files_container->add_child(vcs_metadata_selection);
+
+	Label* extension_language_label = memnew(Label);
+	extension_language_label->set_text(TTR("Extension Language:"));
+	default_files_container->add_child(extension_language_label);
+
+	OptionButton* extension_language_selection = memnew(OptionButton);
+	extension_language_selection->set_custom_minimum_size(Size2(100, 20));
+	extension_language_selection->add_item(TTR("None"), 0);
+	extension_language_selection->add_item(TTR("Rust"), 1);
+	extension_language_selection->add_item(TTR("C#"), 2);
+	extension_language_selection->select(1);
+	default_files_container->add_child(extension_language_selection);
+
 	Control *spacer = memnew(Control);
 	spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	default_files_container->add_child(spacer);
@@ -1067,13 +1083,13 @@ ProjectDialog::ProjectDialog() {
 
 	Control *spacer2 = memnew(Control);
 	spacer2->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	vb->add_child(spacer2);
+	box_container->add_child(spacer2);
 
 	edit_check_box = memnew(CheckBox);
 	edit_check_box->set_text(TTR("Edit Now"));
 	edit_check_box->set_h_size_flags(Control::SIZE_SHRINK_CENTER);
 	edit_check_box->set_pressed(true);
-	vb->add_child(edit_check_box);
+	box_container->add_child(edit_check_box);
 
 	project_name->connect(SceneStringName(text_changed), callable_mp(this, &ProjectDialog::_project_name_changed).unbind(1));
 	project_name->connect(SceneStringName(text_submitted), callable_mp(this, &ProjectDialog::ok_pressed).unbind(1));

@@ -68,7 +68,7 @@ private:
 	bool is_folder_empty = true;
 	ConfirmationDialog *nonempty_confirmation = nullptr;
 
-	CheckButton *create_dir = nullptr;
+	CheckButton *create_dir_button = nullptr;
 	Button *project_browse = nullptr;
 	Button *install_browse = nullptr;
 	VBoxContainer *name_container = nullptr;
@@ -80,7 +80,7 @@ private:
 	HBoxContainer *default_files_container = nullptr;
 	Ref<ButtonGroup> renderer_button_group;
 	bool rendering_device_supported = false;
-	Label *rd_not_supported = nullptr;
+	Label *render_device_not_supported_label = nullptr;
 
 	Label *msg = nullptr;
 	LineEdit *project_name = nullptr;
