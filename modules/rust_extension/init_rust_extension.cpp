@@ -7,33 +7,33 @@ InitRustExtension::InitRustExtension() {
 String InitRustExtension::get_extension_file(const String& project_name) {
 
 	const String profile = R"(
-		[configuration]
-		entry_symbol = "gdext_rust_init"
-		compatibility_minimum = 4.1
-		reloadable = true
+[configuration]
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = 4.1
+reloadable = true
 
-		[libraries]
-		linux.debug.x86_64 =     "res://target/debug/lib{YourCrate}.so"
-		linux.release.x86_64 =   "res://target/release/lib{YourCrate}.so"
-		windows.debug.x86_64 =   "res://target/debug/{YourCrate}.dll"
-		windows.release.x86_64 = "res://target/release/{YourCrate}.dll"
-		macos.debug =            "res://target/debug/lib{YourCrate}.dylib"
-		macos.release =          "res://target/release/lib{YourCrate}.dylib"
-		macos.debug.arm64 =      "res://target/debug/lib{YourCrate}.dylib"
-		macos.release.arm64 =    "res://target/release/lib{YourCrate}.dylib"
+[libraries]
+linux.debug.x86_64 =     "res://target/debug/lib{YourCrate}.so"
+linux.release.x86_64 =   "res://target/release/lib{YourCrate}.so"
+windows.debug.x86_64 =   "res://target/debug/{YourCrate}.dll"
+windows.release.x86_64 = "res://target/release/{YourCrate}.dll"
+macos.debug =            "res://target/debug/lib{YourCrate}.dylib"
+macos.release =          "res://target/release/lib{YourCrate}.dylib"
+macos.debug.arm64 =      "res://target/debug/lib{YourCrate}.dylib"
+macos.release.arm64 =    "res://target/release/lib{YourCrate}.dylib"
 	)";
 	//替换所有的{YourCrate}为项目名
-	return profile.replace("{YourCrate}", project_name);
+	return profile.replace("{YourCrate}", project_name.to_snake_case());
 }
 
 String InitRustExtension::get_enter_file() {
 	const String rs = R"(
-	use godot::prelude::*;
+use godot::prelude::*;
 
-	struct RustGDExtension;
+struct RustGDExtension;
 
-	#[gdextension]
-	unsafe impl ExtensionLibrary for RustGDExtension {}
+#[gdextension]
+unsafe impl ExtensionLibrary for RustGDExtension {}
 
 	)";
 	return rs;

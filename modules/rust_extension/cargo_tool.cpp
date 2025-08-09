@@ -36,9 +36,9 @@ Error CargoTool::done() const {
 		ERR_PRINT("CargoTool: Not set work_dir");
 		return FAILED;
 	}
-	// String main_command = "cd "+ this->work_dir + " && cargo";
 	os->set_cwd(this->work_dir);
 	int result = os->execute("cargo", this->cargo_args, &output, &exit_code, true);
+	print_line(output);
 	if (result != 0 || exit_code != 0) {
 		ERR_PRINT("CargoTool: cargo failed to execute");
 		ERR_PRINT(output);

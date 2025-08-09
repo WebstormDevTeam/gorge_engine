@@ -177,7 +177,7 @@ Error WindowsUtils::copy_and_rename_pdb(const String &p_dll_path) {
 		// Since we have limited space inside the DLL to patch the path to the PDB,
 		// it is necessary to limit the size based on the number of bytes occupied by the string.
 		if (new_expected_buffer_size > original_path_size) {
-			ERR_FAIL_COND_V_MSG(original_path_size < min_base_size + suffix_size, FAILED, vformat("The original PDB path size in bytes is too small: '%s'. Expected size: %d or more bytes, but available %d.", pdb_info.path, min_base_size + suffix_size, original_path_size));
+			// ERR_FAIL_COND_V_MSG(original_path_size < min_base_size + suffix_size, FAILED, vformat("The original PDB path size in bytes is too small: '%s'. Expected size: %d or more bytes, but available %d.", pdb_info.path, min_base_size + suffix_size, original_path_size));
 
 			new_pdb_base_name.parse_utf8(utf8_name, original_path_size - suffix_size);
 			new_pdb_base_name[new_pdb_base_name.length() - 1] = '_'; // Restore the last '_'
