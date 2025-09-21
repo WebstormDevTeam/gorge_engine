@@ -34,14 +34,12 @@
 #include "core/io/dir_access.h"
 #include "core/io/zip_io.h"
 #include "core/version.h"
-#include "editor/editor_settings.h"
 #include "editor/editor_string_names.h"
-#include "editor/editor_vcs_interface.h"
-#include "editor/progress_dialog.h"
 #include "editor/gui/editor_file_dialog.h"
+#include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_icons.h"
 #include "editor/themes/editor_scale.h"
-#include "modules/navigation/nav_utils.h"
+#include "editor/version_control/editor_vcs_interface.h"
 #include "modules/rust_extension/cargo_tool.h"
 #include "modules/rust_extension/init_rust_extension.h"
 #include "scene/gui/check_box.h"
@@ -87,7 +85,7 @@ void ProjectDialog::_validate_path() {
 	_set_message("", MESSAGE_SUCCESS, INSTALL_PATH);
 
 	if (project_name->get_text().strip_edges().is_empty()) {
-		_set_message(TTR("It would be a good idea to name your project."), MESSAGE_ERROR);
+		_set_message(TTRC("It would be a good idea to name your project."), MESSAGE_ERROR);
 		return;
 	}
 
@@ -123,7 +121,7 @@ void ProjectDialog::_validate_path() {
 
 			unzFile pkg = unzOpen2(zip_path.utf8().get_data(), &io);
 			if (!pkg) {
-				_set_message(TTR("Invalid \".zip\" project file; it is not in ZIP format."), MESSAGE_ERROR);
+				_set_message(TTRC("Invalid \".zip\" project file; it is not in ZIP format."), MESSAGE_ERROR);
 				unzClose(pkg);
 				return;
 			}
@@ -151,7 +149,7 @@ void ProjectDialog::_validate_path() {
 			}
 
 			if (ret == UNZ_END_OF_LIST_OF_FILE) {
-				_set_message(TTR("Invalid \".zip\" project file; it doesn't contain a \"project.godot\" file."), MESSAGE_ERROR);
+				_set_message(TTRC("Invalid \".zip\" project file; it doesn't contain a \"project.godot\" file."), MESSAGE_ERROR);
 				unzClose(pkg);
 				return;
 			}
@@ -163,30 +161,30 @@ void ProjectDialog::_validate_path() {
 			create_dir_button->hide();
 			install_path_container->hide();
 
-			_set_message(TTR("Valid project found at path."), MESSAGE_SUCCESS);
+			_set_message(TTRC("Valid project found at path."), MESSAGE_SUCCESS);
 		} else {
 			create_dir_button->hide();
 			install_path_container->hide();
 
-			_set_message(TTR("Please choose a \"project.godot\", a directory with one, or a \".zip\" file."), MESSAGE_ERROR);
+			_set_message(TTRC("Please choose a \"project.godot\", a directory with one, or a \".zip\" file."), MESSAGE_ERROR);
 			return;
 		}
 	}
 
 	if (target_path.is_relative_path()) {
-		_set_message(TTR("The path specified is invalid."), MESSAGE_ERROR, target_path_input_type);
+		_set_message(TTRC("The path specified is invalid."), MESSAGE_ERROR, target_path_input_type);
 		return;
 	}
 
 	if (target_path.get_file() != OS::get_singleton()->get_safe_dir_name(target_path.get_file())) {
-		_set_message(TTR("The directory name specified contains invalid characters or trailing whitespace."), MESSAGE_ERROR, target_path_input_type);
+		_set_message(TTRC("The directory name specified contains invalid characters or trailing whitespace."), MESSAGE_ERROR, target_path_input_type);
 		return;
 	}
 
 	String working_dir = d->get_current_dir();
 	String executable_dir = OS::get_singleton()->get_executable_path().get_base_dir();
 	if (target_path == working_dir || target_path == executable_dir) {
-		_set_message(TTR("Creating a project at the engine's working directory or executable directory is not allowed, as it would prevent the project manager from starting."), MESSAGE_ERROR, target_path_input_type);
+		_set_message(TTRC("Creating a project at the engine's working directory or executable directory is not allowed, as it would prevent the project manager from starting."), MESSAGE_ERROR, target_path_input_type);
 		return;
 	}
 
@@ -198,32 +196,32 @@ void ProjectDialog::_validate_path() {
 #endif
 	String documents_dir = OS::get_singleton()->get_system_dir(OS::SYSTEM_DIR_DOCUMENTS);
 	if (target_path == home_dir || target_path == documents_dir) {
-		_set_message(TTR("You cannot save a project at the selected path. Please create a subfolder or choose a new path."), MESSAGE_ERROR, target_path_input_type);
+		_set_message(TTRC("You cannot save a project at the selected path. Please create a subfolder or choose a new path."), MESSAGE_ERROR, target_path_input_type);
 		return;
 	}
 
 	is_folder_empty = true;
-	if (mode == MODE_NEW || mode == MODE_INSTALL || (mode == MODE_IMPORT && target_path_input_type == InputType::INSTALL_PATH)) {
+	if (mode == MODE_NEW || mode == MODE_INSTALL || mode == MODE_DUPLICATE || (mode == MODE_IMPORT && target_path_input_type == InputType::INSTALL_PATH)) {
 		if (create_dir_button->is_pressed()) {
 			if (!d->dir_exists(target_path.get_base_dir())) {
-				_set_message(TTR("The parent directory of the path specified doesn't exist."), MESSAGE_ERROR, target_path_input_type);
+				_set_message(TTRC("The parent directory of the path specified doesn't exist."), MESSAGE_ERROR, target_path_input_type);
 				return;
 			}
 
 			if (d->dir_exists(target_path)) {
 				// The path is not necessarily empty here, but we will update the message later if it isn't.
-				_set_message(TTR("The project folder already exists and is empty."), MESSAGE_SUCCESS, target_path_input_type);
+				_set_message(TTRC("The project folder already exists and is empty."), MESSAGE_SUCCESS, target_path_input_type);
 			} else {
-				_set_message(TTR("The project folder will be automatically created."), MESSAGE_SUCCESS, target_path_input_type);
+				_set_message(TTRC("The project folder will be automatically created."), MESSAGE_SUCCESS, target_path_input_type);
 			}
 		} else {
 			if (!d->dir_exists(target_path)) {
-				_set_message(TTR("The path specified doesn't exist."), MESSAGE_ERROR, target_path_input_type);
+				_set_message(TTRC("The path specified doesn't exist."), MESSAGE_ERROR, target_path_input_type);
 				return;
 			}
 
 			// The path is not necessarily empty here, but we will update the message later if it isn't.
-			_set_message(TTR("The project folder exists and is empty."), MESSAGE_SUCCESS, target_path_input_type);
+			_set_message(TTRC("The project folder exists and is empty."), MESSAGE_SUCCESS, target_path_input_type);
 		}
 
 		// Check if the directory is empty. Not an error, but we want to warn the user.
@@ -244,14 +242,14 @@ void ProjectDialog::_validate_path() {
 			d->list_dir_end();
 
 			if (!is_folder_empty) {
-				_set_message(TTR("The selected path is not empty. Choosing an empty folder is highly recommended."), MESSAGE_WARNING, target_path_input_type);
+				_set_message(TTRC("The selected path is not empty. Choosing an empty folder is highly recommended."), MESSAGE_WARNING, target_path_input_type);
 			}
 		}
 	}
 }
 
 String ProjectDialog::_get_target_path() {
-	if (mode == MODE_NEW || mode == MODE_INSTALL) {
+	if (mode == MODE_NEW || mode == MODE_INSTALL || mode == MODE_DUPLICATE) {
 		return project_path->get_text();
 	} else if (mode == MODE_IMPORT) {
 		return install_path->get_text();
@@ -260,7 +258,7 @@ String ProjectDialog::_get_target_path() {
 	}
 }
 void ProjectDialog::_set_target_path(const String &p_text) {
-	if (mode == MODE_NEW || mode == MODE_INSTALL) {
+	if (mode == MODE_NEW || mode == MODE_INSTALL || mode == MODE_DUPLICATE) {
 		project_path->set_text(p_text);
 	} else if (mode == MODE_IMPORT) {
 		install_path->set_text(p_text);
@@ -271,7 +269,7 @@ void ProjectDialog::_set_target_path(const String &p_text) {
 
 void ProjectDialog::_update_target_auto_dir() {
 	String new_auto_dir;
-	if (mode == MODE_NEW || mode == MODE_INSTALL) {
+	if (mode == MODE_NEW || mode == MODE_INSTALL || mode == MODE_DUPLICATE) {
 		new_auto_dir = project_name->get_text();
 	} else if (mode == MODE_IMPORT) {
 		new_auto_dir = project_path->get_text().get_file().get_basename();
@@ -281,7 +279,7 @@ void ProjectDialog::_update_target_auto_dir() {
 		case 0: // No convention
 			break;
 		case 1: // kebab-case
-			new_auto_dir = new_auto_dir.to_lower().replace(" ", "-");
+			new_auto_dir = new_auto_dir.to_kebab_case();
 			break;
 		case 2: // snake_case
 			new_auto_dir = new_auto_dir.to_snake_case();
@@ -342,7 +340,7 @@ void ProjectDialog::_create_dir_toggled(bool p_pressed) {
 }
 
 void ProjectDialog::_project_name_changed() {
-	if (mode == MODE_NEW || mode == MODE_INSTALL) {
+	if (mode == MODE_NEW || mode == MODE_INSTALL || mode == MODE_DUPLICATE) {
 		_update_target_auto_dir();
 	}
 
@@ -369,7 +367,7 @@ void ProjectDialog::_browse_project_path() {
 	if (mode == MODE_IMPORT && install_path->is_visible_in_tree()) {
 		// Select last ZIP file.
 		fdialog_project->set_current_path(path);
-	} else if ((mode == MODE_NEW || mode == MODE_INSTALL) && create_dir_button->is_pressed()) {
+	} else if ((mode == MODE_NEW || mode == MODE_INSTALL || mode == MODE_DUPLICATE) && create_dir_button->is_pressed()) {
 		// Select parent directory of project path.
 		fdialog_project->set_current_dir(path.get_base_dir());
 	} else {
@@ -380,7 +378,7 @@ void ProjectDialog::_browse_project_path() {
 	if (mode == MODE_IMPORT) {
 		fdialog_project->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_ANY);
 		fdialog_project->clear_filters();
-		fdialog_project->add_filter("project.godot", vformat("%s %s", VERSION_NAME, TTR("Project")));
+		fdialog_project->add_filter("project.godot", vformat("%s %s", GODOT_VERSION_NAME, TTR("Project")));
 		fdialog_project->add_filter("*.zip", TTR("ZIP File"));
 	} else {
 		fdialog_project->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_DIR);
@@ -412,7 +410,7 @@ void ProjectDialog::_browse_install_path() {
 void ProjectDialog::_project_path_selected(const String &p_path) {
 	show_dialog(false);
 
-	if (create_dir_button->is_pressed() && (mode == MODE_NEW || mode == MODE_INSTALL)) {
+	if (create_dir_button->is_pressed() && (mode == MODE_NEW || mode == MODE_INSTALL || mode == MODE_DUPLICATE)) {
 		// Replace parent directory, but keep target dir name.
 		project_path->set_text(p_path.path_join(project_path->get_text().get_file()));
 	} else {
@@ -501,8 +499,8 @@ void ProjectDialog::ok_pressed() {
 	if (!is_folder_empty) {
 		if (!nonempty_confirmation) {
 			nonempty_confirmation = memnew(ConfirmationDialog);
-			nonempty_confirmation->set_title(TTR("Warning: This folder is not empty"));
-			nonempty_confirmation->set_text(TTR("You are about to create a Godot project in a non-empty folder.\nThe entire contents of this folder will be imported as project resources!\n\nAre you sure you wish to continue?"));
+			nonempty_confirmation->set_title(TTRC("Warning: This folder is not empty"));
+			nonempty_confirmation->set_text(TTRC("You are about to create a Godot project in a non-empty folder.\nThe entire contents of this folder will be imported as project resources!\n\nAre you sure you wish to continue?"));
 			nonempty_confirmation->get_ok_button()->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_nonempty_confirmation_ok_pressed));
 			add_child(nonempty_confirmation);
 		}
@@ -516,7 +514,7 @@ void ProjectDialog::ok_pressed() {
 		if (create_dir_button->is_pressed()) {
 			Ref<DirAccess> d = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 			if (!d->dir_exists(path) && d->make_dir(path) != OK) {
-				_set_message(TTR("Couldn't create project directory, check permissions."), MESSAGE_ERROR);
+				_set_message(TTRC("Couldn't create project directory, check permissions."), MESSAGE_ERROR);
 				return;
 			}
 		}
@@ -552,7 +550,7 @@ void ProjectDialog::ok_pressed() {
 
 		Error err = ProjectSettings::get_singleton()->save_custom(path.path_join("project.godot"), initial_settings, Vector<String>(), false);
 		if (err != OK) {
-			_set_message(TTR("Couldn't create project.godot in project path."), MESSAGE_ERROR);
+			_set_message(TTRC("Couldn't create project.godot in project path."), MESSAGE_ERROR);
 			return;
 		}
 
@@ -619,7 +617,7 @@ void ProjectDialog::ok_pressed() {
 		// Store default project icon in SVG format.
 		Ref<FileAccess> fa_icon = FileAccess::open(path.path_join("icon.svg"), FileAccess::WRITE, &err);
 		if (err != OK) {
-			_set_message(TTR("Couldn't create icon.svg in project path."), MESSAGE_ERROR);
+			_set_message(TTRC("Couldn't create icon.svg in project path."), MESSAGE_ERROR);
 			return;
 		}
 		fa_icon->store_string(get_default_project_icon());
@@ -660,7 +658,7 @@ void ProjectDialog::ok_pressed() {
 
 			unzFile pkg = unzOpen2(zip_path.utf8().get_data(), &io);
 			if (!pkg) {
-				dialog_error->set_text(TTR("Error opening package file, not in ZIP format."));
+				dialog_error->set_text(TTRC("Error opening package file, not in ZIP format."));
 				dialog_error->popup_centered();
 				return;
 			}
@@ -691,7 +689,7 @@ void ProjectDialog::ok_pressed() {
 			}
 
 			if (ret == UNZ_END_OF_LIST_OF_FILE) {
-				_set_message(TTR("Invalid \".zip\" project file; it doesn't contain a \"project.godot\" file."), MESSAGE_ERROR);
+				_set_message(TTRC("Invalid \".zip\" project file; it doesn't contain a \"project.godot\" file."), MESSAGE_ERROR);
 				unzClose(pkg);
 				return;
 			}
@@ -699,7 +697,7 @@ void ProjectDialog::ok_pressed() {
 			if (create_dir_button->is_pressed()) {
 				Ref<DirAccess> d = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
 				if (!d->dir_exists(path) && d->make_dir(path) != OK) {
-					_set_message(TTR("Couldn't create project directory, check permissions."), MESSAGE_ERROR);
+					_set_message(TTRC("Couldn't create project directory, check permissions."), MESSAGE_ERROR);
 					return;
 				}
 			}
@@ -768,7 +766,20 @@ void ProjectDialog::ok_pressed() {
 		} break;
 	}
 
-	if (mode == MODE_RENAME || mode == MODE_INSTALL) {
+	if (mode == MODE_DUPLICATE) {
+		Ref<DirAccess> dir = DirAccess::open(original_project_path);
+		Error err = FAILED;
+		if (dir.is_valid()) {
+			err = dir->copy_dir(".", path, -1, true);
+		}
+		if (err != OK) {
+			dialog_error->set_text(vformat(TTR("Couldn't duplicate project (error %d)."), err));
+			dialog_error->popup_centered();
+			return;
+		}
+	}
+
+	if (mode == MODE_RENAME || mode == MODE_INSTALL || mode == MODE_DUPLICATE) {
 		// Load project.godot as ConfigFile to set the new name.
 		ConfigFile cfg;
 		String project_godot = path.path_join("project.godot");
@@ -789,7 +800,25 @@ void ProjectDialog::ok_pressed() {
 
 	hide();
 	if (mode == MODE_NEW || mode == MODE_IMPORT || mode == MODE_INSTALL) {
+#ifdef ANDROID_ENABLED
+		// Create a .nomedia file to hide assets from media apps on Android.
+		// Android 11 has some issues with nomedia files, so it's disabled there. See GH-106479, GH-105399 for details.
+		// NOTE: Nomedia file is also handled during the first filesystem scan. See editor_file_system.cpp -> EditorFileSystem::scan().
+		String sdk_version = OS::get_singleton()->get_version().get_slicec('.', 0);
+		if (sdk_version != "30") {
+			const String nomedia_file_path = path.path_join(".nomedia");
+			Ref<FileAccess> f2 = FileAccess::open(nomedia_file_path, FileAccess::WRITE);
+			if (f2.is_null()) {
+				// .nomedia isn't so critical.
+				ERR_PRINT("Couldn't create .nomedia in project path.");
+			} else {
+				f2->close();
+			}
+		}
+#endif
 		emit_signal(SNAME("project_created"), path, edit_check_box->is_pressed());
+	} else if (mode == MODE_DUPLICATE) {
+		emit_signal(SNAME("project_duplicated"), original_project_path, path, edit_check_box->is_visible() && edit_check_box->is_pressed());
 	} else if (mode == MODE_RENAME) {
 		emit_signal(SNAME("projects_updated"));
 	}
@@ -801,6 +830,14 @@ void ProjectDialog::set_zip_path(const String &p_path) {
 
 void ProjectDialog::set_zip_title(const String &p_title) {
 	zip_title = p_title;
+}
+
+void ProjectDialog::set_original_project_path(const String &p_path) {
+	original_project_path = p_path;
+}
+
+void ProjectDialog::set_duplicate_can_edit(bool p_duplicate_can_edit) {
+	duplicate_can_edit = p_duplicate_can_edit;
 }
 
 void ProjectDialog::set_mode(Mode p_mode) {
@@ -825,8 +862,8 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 		// Name and path are set in `ProjectManager::_rename_project`.
 		project_path->set_editable(false);
 
-		set_title(TTR("Rename Project"));
-		set_ok_button_text(TTR("Rename"));
+		set_title(TTRC("Rename Project"));
+		set_ok_button_text(TTRC("Rename"));
 
 		create_dir_button->hide();
 		project_status_rect->hide();
@@ -846,17 +883,24 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 		}
 		project_path->set_editable(true);
 
-		String fav_dir = EDITOR_GET("filesystem/directories/default_project_path");
-		fav_dir = fav_dir.simplify_path();
-		if (!fav_dir.is_empty()) {
-			project_path->set_text(fav_dir);
-			install_path->set_text(fav_dir);
-			fdialog_project->set_current_dir(fav_dir);
+		if (mode == MODE_DUPLICATE) {
+			String original_dir = original_project_path.get_base_dir();
+			project_path->set_text(original_dir);
+			install_path->set_text(original_dir);
+			fdialog_project->set_current_dir(original_dir);
 		} else {
-			Ref<DirAccess> d = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
-			project_path->set_text(d->get_current_dir());
-			install_path->set_text(d->get_current_dir());
-			fdialog_project->set_current_dir(d->get_current_dir());
+			String fav_dir = EDITOR_GET("filesystem/directories/default_project_path");
+			fav_dir = fav_dir.simplify_path();
+			if (!fav_dir.is_empty()) {
+				project_path->set_text(fav_dir);
+				install_path->set_text(fav_dir);
+				fdialog_project->set_current_dir(fav_dir);
+			} else {
+				Ref<DirAccess> d = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+				project_path->set_text(d->get_current_dir());
+				install_path->set_text(d->get_current_dir());
+				fdialog_project->set_current_dir(d->get_current_dir());
+			}
 		}
 
 		create_dir_button->show();
@@ -865,8 +909,8 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 		edit_check_box->show();
 
 		if (mode == MODE_IMPORT) {
-			set_title(TTR("Import Existing Project"));
-			set_ok_button_text(TTR("Import"));
+			set_title(TTRC("Import Existing Project"));
+			set_ok_button_text(TTRC("Import"));
 
 			name_container->hide();
 			install_path_container->hide();
@@ -875,8 +919,8 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 
 			// Project path dialog is also opened; no need to change focus.
 		} else if (mode == MODE_NEW) {
-			set_title(TTR("Create New Project"));
-			set_ok_button_text(TTR("Create"));
+			set_title(TTRC("Create New Project"));
+			set_ok_button_text(TTRC("Create"));
 
 			name_container->show();
 			install_path_container->hide();
@@ -887,7 +931,7 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 			callable_mp(project_name, &LineEdit::select_all).call_deferred();
 		} else if (mode == MODE_INSTALL) {
 			set_title(TTR("Install Project:") + " " + zip_title);
-			set_ok_button_text(TTR("Install"));
+			set_ok_button_text(TTRC("Install"));
 
 			project_name->set_text(zip_title);
 
@@ -897,6 +941,20 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 			default_files_container->hide();
 
 			callable_mp((Control *)project_path, &Control::grab_focus).call_deferred();
+		} else if (mode == MODE_DUPLICATE) {
+			set_title(TTRC("Duplicate Project"));
+			set_ok_button_text(TTRC("Duplicate"));
+
+			name_container->show();
+			install_path_container->hide();
+			renderer_container->hide();
+			default_files_container->hide();
+			if (!duplicate_can_edit) {
+				edit_check_box->hide();
+			}
+
+			callable_mp((Control *)project_name, &Control::grab_focus).call_deferred();
+			callable_mp(project_name, &LineEdit::select_all).call_deferred();
 		}
 
 		auto_dir = "";
@@ -915,6 +973,10 @@ void ProjectDialog::show_dialog(bool p_reset_name) {
 
 void ProjectDialog::_notification(int p_what) {
 	switch (p_what) {
+		case NOTIFICATION_TRANSLATION_CHANGED: {
+			_renderer_selected();
+		} break;
+
 		case NOTIFICATION_THEME_CHANGED: {
 			create_dir_button->set_button_icon(get_editor_theme_icon(SNAME("FolderCreate")));
 			project_browse->set_button_icon(get_editor_theme_icon(SNAME("FolderBrowse")));
@@ -934,6 +996,7 @@ void ProjectDialog::_notification(int p_what) {
 
 void ProjectDialog::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("project_created"));
+	ADD_SIGNAL(MethodInfo("project_duplicated"));
 	ADD_SIGNAL(MethodInfo("projects_updated"));
 }
 
@@ -945,10 +1008,11 @@ ProjectDialog::ProjectDialog() {
 	box_container->add_child(name_container);
 
 	Label *label = memnew(Label);
-	label->set_text(TTR("Project Name:"));
+	label->set_text(TTRC("Project Name:"));
 	name_container->add_child(label);
 
 	project_name = memnew(LineEdit);
+	project_name->set_virtual_keyboard_show_on_focus(false);
 	project_name->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	name_container->add_child(project_name);
 
@@ -959,12 +1023,12 @@ ProjectDialog::ProjectDialog() {
 	project_path_container->add_child(project_path_h_box_label);
 
 	label = memnew(Label);
-	label->set_text(TTR("Project Path:"));
+	label->set_text(TTRC("Project Path:"));
 	label->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	project_path_h_box_label->add_child(label);
 
 	create_dir_button = memnew(CheckButton);
-	create_dir_button->set_text(TTR("Create Folder"));
+	create_dir_button->set_text(TTRC("Create Folder"));
 	create_dir_button->set_pressed(true);
 	project_path_h_box_label->add_child(create_dir_button);
 	create_dir_button->connect(SceneStringName(toggled), callable_mp(this, &ProjectDialog::_create_dir_toggled));
@@ -973,6 +1037,7 @@ ProjectDialog::ProjectDialog() {
 
 	project_path = memnew(LineEdit);
 	project_path->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	project_path->set_accessibility_name(TTRC("Project Path:"));
 	project_path->set_structured_text_bidi_override(TextServer::STRUCTURED_TEXT_FILE);
 
 	project_path_h_box_container->add_child(project_path);
@@ -982,7 +1047,7 @@ ProjectDialog::ProjectDialog() {
 	box_container->add_child(install_path_container);
 
 	label = memnew(Label);
-	label->set_text(TTR("Project Installation Path:"));
+	label->set_text(TTRC("Project Installation Path:"));
 	install_path_container->add_child(label);
 
 	HBoxContainer *install_path_h_box = memnew(HBoxContainer);
@@ -990,6 +1055,7 @@ ProjectDialog::ProjectDialog() {
 
 	install_path = memnew(LineEdit);
 	install_path->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	install_path->set_accessibility_name(TTRC("Project Installation Path:"));
 	install_path->set_structured_text_bidi_override(TextServer::STRUCTURED_TEXT_FILE);
 	install_path_h_box->add_child(install_path);
 
@@ -999,7 +1065,7 @@ ProjectDialog::ProjectDialog() {
 	project_path_h_box_container->add_child(project_status_rect);
 
 	project_browse = memnew(Button);
-	project_browse->set_text(TTR("Browse"));
+	project_browse->set_text(TTRC("Browse"));
 	project_browse->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_browse_project_path));
 	project_path_h_box_container->add_child(project_browse);
 
@@ -1009,11 +1075,12 @@ ProjectDialog::ProjectDialog() {
 	install_path_h_box->add_child(install_status_rect);
 
 	install_browse = memnew(Button);
-	install_browse->set_text(TTR("Browse"));
+	install_browse->set_text(TTRC("Browse"));
 	install_browse->connect(SceneStringName(pressed), callable_mp(this, &ProjectDialog::_browse_install_path));
 	install_path_h_box->add_child(install_browse);
 
 	msg = memnew(Label);
+	msg->set_focus_mode(Control::FOCUS_ACCESSIBILITY);
 	msg->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
 	msg->set_custom_minimum_size(Size2(200, 0) * EDSCALE);
 	msg->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
@@ -1023,7 +1090,7 @@ ProjectDialog::ProjectDialog() {
 	renderer_container = memnew(VBoxContainer);
 	box_container->add_child(renderer_container);
 	label = memnew(Label);
-	label->set_text(TTR("Renderer:"));
+	label->set_text(TTRC("Renderer:"));
 	renderer_container->add_child(label);
 	HBoxContainer *renderer_h_box = memnew(HBoxContainer);
 	renderer_container->add_child(renderer_h_box);
@@ -1046,7 +1113,7 @@ ProjectDialog::ProjectDialog() {
 
 	Button *rs_button = memnew(CheckBox);
 	rs_button->set_button_group(renderer_button_group);
-	rs_button->set_text(TTR("Forward+"));
+	rs_button->set_text(TTRC("Forward+"));
 #ifndef RD_ENABLED
 	rs_button->set_disabled(true);
 #endif
@@ -1058,7 +1125,7 @@ ProjectDialog::ProjectDialog() {
 	}
 	rs_button = memnew(CheckBox);
 	rs_button->set_button_group(renderer_button_group);
-	rs_button->set_text(TTR("Mobile"));
+	rs_button->set_text(TTRC("Mobile"));
 #ifndef RD_ENABLED
 	rs_button->set_disabled(true);
 #endif
@@ -1070,7 +1137,7 @@ ProjectDialog::ProjectDialog() {
 	}
 	rs_button = memnew(CheckBox);
 	rs_button->set_button_group(renderer_button_group);
-	rs_button->set_text(TTR("Compatibility"));
+	rs_button->set_text(TTRC("Compatibility"));
 #if !defined(GLES3_ENABLED)
 	rs_button->set_disabled(true);
 #endif
@@ -1089,11 +1156,14 @@ ProjectDialog::ProjectDialog() {
 	render_v_box->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	renderer_h_box->add_child(render_v_box);
 	renderer_info = memnew(Label);
+	renderer_info->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
+	renderer_info->set_focus_mode(Control::FOCUS_ACCESSIBILITY);
 	renderer_info->set_modulate(Color(1, 1, 1, 0.7));
 	render_v_box->add_child(renderer_info);
 
 	render_device_not_supported_label = memnew(Label);
-	render_device_not_supported_label->set_text(vformat(TTR("RenderingDevice-based methods not available on this GPU:\n%s\nPlease use the Compatibility renderer."), RenderingServer::get_singleton()->get_video_adapter_name()));
+	render_device_not_supported_label->set_focus_mode(Control::FOCUS_ACCESSIBILITY);
+	render_device_not_supported_label->set_text(vformat(TTRC("RenderingDevice-based methods not available on this GPU:\n%s\nPlease use the Compatibility renderer."), RenderingServer::get_singleton()->get_video_adapter_name()));
 	render_device_not_supported_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
 	render_device_not_supported_label->set_custom_minimum_size(Size2(200, 0) * EDSCALE);
 	render_device_not_supported_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
@@ -1104,6 +1174,7 @@ ProjectDialog::ProjectDialog() {
 
 	label = memnew(Label);
 	label->set_text(TTR("The renderer can be changed later, but scenes may need to be adjusted."));
+	label->set_focus_mode(Control::FOCUS_ACCESSIBILITY);
 	// Add some extra spacing to separate it from the list above and the buttons below.
 	label->set_custom_minimum_size(Size2(0, 40) * EDSCALE);
 	label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
@@ -1114,13 +1185,14 @@ ProjectDialog::ProjectDialog() {
 	default_files_container = memnew(HBoxContainer);
 	box_container->add_child(default_files_container);
 	Label* vcs_label = memnew(Label);
-	vcs_label->set_text(TTR("Version Control Metadata:"));
+	vcs_label->set_text(TTRC("Version Control Metadata:"));
 	default_files_container->add_child(vcs_label);
 	vcs_metadata_selection = memnew(OptionButton);
 	vcs_metadata_selection->set_custom_minimum_size(Size2(100, 20));
-	vcs_metadata_selection->add_item(TTR("None"), static_cast<int>(EditorVCSInterface::VCSMetadata::NONE));
-	vcs_metadata_selection->add_item(TTR("Git"), static_cast<int>(EditorVCSInterface::VCSMetadata::GIT));
+	vcs_metadata_selection->add_item(TTRC("None"), static_cast<int>(EditorVCSInterface::VCSMetadata::NONE));
+	vcs_metadata_selection->add_item(TTRC("Git"), static_cast<int>(EditorVCSInterface::VCSMetadata::GIT));
 	vcs_metadata_selection->select((int)EditorVCSInterface::VCSMetadata::GIT);
+	vcs_metadata_selection->set_accessibility_name(TTRC("Version Control Metadata:"));
 	default_files_container->add_child(vcs_metadata_selection);
 
 	Label* extension_language_label = memnew(Label);
@@ -1148,7 +1220,7 @@ ProjectDialog::ProjectDialog() {
 	box_container->add_child(spacer2);
 
 	edit_check_box = memnew(CheckBox);
-	edit_check_box->set_text(TTR("Edit Now"));
+	edit_check_box->set_text(TTRC("Edit Now"));
 	edit_check_box->set_h_size_flags(Control::SIZE_SHRINK_CENTER);
 	edit_check_box->set_pressed(true);
 	box_container->add_child(edit_check_box);
