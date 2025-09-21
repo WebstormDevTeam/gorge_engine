@@ -1162,7 +1162,7 @@ ProjectDialog::ProjectDialog() {
 	render_v_box->add_child(renderer_info);
 
 	render_device_not_supported_label = memnew(Label);
-	render_device_not_supported_label.set_focus_mod(Control::FOCUS_ACCCESSIBILITY);
+	render_device_not_supported_label->set_focus_mode(Control::FOCUS_ACCESSIBILITY);
 	render_device_not_supported_label->set_text(vformat(TTRC("RenderingDevice-based methods not available on this GPU:\n%s\nPlease use the Compatibility renderer."), RenderingServer::get_singleton()->get_video_adapter_name()));
 	render_device_not_supported_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
 	render_device_not_supported_label->set_custom_minimum_size(Size2(200, 0) * EDSCALE);
@@ -1174,7 +1174,7 @@ ProjectDialog::ProjectDialog() {
 
 	label = memnew(Label);
 	label->set_text(TTR("The renderer can be changed later, but scenes may need to be adjusted."));
-	label->set_focus_mode(Control::FOCUS_ACCESSIBILITY)
+	label->set_focus_mode(Control::FOCUS_ACCESSIBILITY);
 	// Add some extra spacing to separate it from the list above and the buttons below.
 	label->set_custom_minimum_size(Size2(0, 40) * EDSCALE);
 	label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
