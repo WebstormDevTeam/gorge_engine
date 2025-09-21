@@ -167,6 +167,7 @@ void RustEditorPlugin::_build_button_callback() {
 	print_line("Run Cargo Building...");
 	const String work_dir = ProjectSettings::get_singleton()->get_resource_path();
 	const Error build_err = CargoTool::Cargo()->set_work_dir(work_dir)->build()->done();
+	print_line("Cargo build done");
 	if (build_err != OK) {
 		ERR_PRINT("Cargo build Failed");
 	}
@@ -183,6 +184,8 @@ void BuildButton::_notification(int p_what) {
 			set_button_icon(icon);
 			break;
 		}
+		default:
+			break;
 	}
 }
 
