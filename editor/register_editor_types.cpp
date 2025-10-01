@@ -133,6 +133,9 @@
 #include "editor/scene/3d/skeleton_ik_3d_editor_plugin.h"
 #endif
 #include "modules/rust_extension/rust_editor_plugin.h"
+#include "modules/blueprint_editor/blueprint_editor.h"
+
+class BlueprintEditor;
 
 void register_editor_types() {
 	OS::get_singleton()->benchmark_begin_measure("Editor", "Register Types");
@@ -279,6 +282,7 @@ void register_editor_types() {
 #endif
 
 	EditorPlugins::add_by_type<RustEditorPlugin>();
+	EditorPlugins::add_by_type<BlueprintEditor>();
 
 	// For correct doc generation.
 	GLOBAL_DEF("editor/run/main_run_args", "");
